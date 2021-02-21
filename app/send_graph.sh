@@ -35,7 +35,7 @@ jq -h > /dev/null 2>&1 || error 'jq が見つかりません'
 
 endpoint_info="/var/local/co2mon/DATA/endpoint_info"
 image_url="$(cat "${endpoint_info}" | grep 'imageUrl: ' | cut -d ' ' -f 2 | tr -d '\r')"
-name="$(cat "${endpoint_info}" | grep 'name: ' | cut -d ' ' -f 2 | tr -d '\r')"
+name="$(cat "${endpoint_info}" | grep 'name: ' | cut -d ' ' -f 2- | tr -d '\r')"
 token="$(cat "${endpoint_info}" | grep '^token: ' | cut -d ' ' -f 2 | tr -d '\r')"
 #if [ -z "${info_url}" ] || [ -z "${token}" ]; then
 if [ -z "${image_url}" ] || [ -z "${token}" ]; then
@@ -44,8 +44,9 @@ fi
 
 ## 過去6時間ぶんのCO2濃度履歴を取得する
 tail -n 22000 /var/local/co2mon/DATA/log/co2/latest |
+  tr -d '\r' |
   awk -v pt="$((date - 21600))" '$1 > pt' |
-  sed 's/ co2=/ /g' > "${tmp}"/co2_last_6h.timet_ppm
+  sed -n 's/\(^[0-9][0-9]*\)\(.*\)\(co2=\)\([0-9][0-9]*\)\(.*$\)/\1 \4/p' > "${tmp}"/co2_last_6h.timet_ppm
 cut -d ' ' -f 1 < "${tmp}"/co2_last_6h.timet_ppm | TZ="JST-9" /workdir/app/utconv -r > "${tmp}"/co2_last_6h.jstdate
 cut -d ' ' -f 2 < "${tmp}"/co2_last_6h.timet_ppm > "${tmp}"/co2_last_6h.ppm
 paste "${tmp}"/co2_last_6h.jstdate "${tmp}"/co2_last_6h.ppm > "${tmp}"/co2_last_6h.jstdate_ppm

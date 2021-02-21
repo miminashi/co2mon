@@ -37,11 +37,29 @@ if [ -z "${info_url}" ] || [ -z "${token}" ]; then
   error 'endpoint_info が正しくありません'
 fi
 
-co2="$(tail -n 1 /var/local/co2mon/DATA/log/co2/latest | cut -d ' ' -f 2 | cut -d '=' -f 2 | tr -d '\r')"
-tail -n 1 /var/local/co2mon/DATA/log/gps_tpv |
+co2="$(tail -n 1 /var/local/co2mon/DATA/log/co2/latest |
   cut -d ' ' -f 2 |
-  jq '{"lat": .lat, "lng": .lon, "alt": .alt, "direction": 0}' |
-  #jq --arg type "${type}" '. + {"type": $type}' |
+  tr -d '\r' |
+  sed -n 's/\(^.*\)\(co2=\)\([0-9][0-9]*\)\(.*$\)/\3/p')"
+latest_gps_tpv="$(tail -n 10800 /var/local/co2mon/DATA/log/gps_tpv |
+  cut -f 2- -d ' ' |
+  jq -c 'select(.lat != null and .lon != null)' |
+  tail -n 1)"
+if [ -n "${latest_gps_tpv}" ]; then
+  lat="$(echo "${latest_gps_tpv}" | jq -r .lat)"
+  lng="$(echo "${latest_gps_tpv}" | jq -r .lon)"
+  alt="$(echo "${latest_gps_tpv}" | jq -r .alt | grep -v 'null' | grep '.' || echo 0.0)"
+elif cat /var/local/co2mon/DATA/location | grep '.'; then
+  lat="$(cat /var/local/co2mon/DATA/location | cut -d ',' -f 1)"
+  lng="$(cat /var/local/co2mon/DATA/location | cut -d ',' -f 2)"
+  alt="$(cat /var/local/co2mon/DATA/location | cut -d ',' -f 3)"
+else
+  lat="0.0"
+  lng="0.0"
+  alt="0.0"
+fi
+
+printf '{"lat": %s, "lng": %s, "alt": %s}\n' "${lat}" "${lng}" "${alt}" |
   jq --arg type "default" '. + {"type": $type}' |
   jq --arg co2 "${co2}" '. + {"additional": {"info": {"co2": $co2}}}' |
   curl -s -w '\n' -H "Content-type: application/json" -d @- "${info_url}?token=${token}"

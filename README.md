@@ -1,119 +1,82 @@
 # co2mon
 
+![airnorm_mobile](airnorm_mobile.jpg)
+
 Hec-EyeにつながるCO2モニタ
 
-## ビルド
+## 必要なハードウェア
 
-Docker.appの設定から、`Command Line > Enable Experimental features`を有効にしておく必要があります。
+- RaspberryPi 4
+- [usb_co2](https://github.com/realglobe-Inc/usb_co2)
+- [usb_7seg](https://github.com/realglobe-Inc/usb_7seg)
+- PIX-MT100
+  - セルラー回線（LTE）で使用する場合のみ
+- USB接続のGPS受信機
+  - 車載の場合など、移動しながら使用する場合のみ
+  - [GU-902MGG-USB](https://akizukidenshi.com/catalog/g/gM-14541/)が動作確認済
+- モバイルバッテリー
+  - 車載の場合など、移動しながら使用する場合のみ
 
-![enable_experimental_feature](docker_config.png)
+## デプロイ
 
-設定が済んだら、
+### RaspberryPiのセットアップ
 
-```sh
-docker buildx create --use         # 最初の1回のみ
-docker buildx inspect --bootstrap  # 最初の1回のみ
-./docker_build.sh
-```
-
-## DockerイメージをRaspberryPiに転送する
-
-```sh
-docker image save co2mon | ssh cm01.local docker image load
-```
-
-**ビルドして転送**
+microSDの書き込みを行う。
 
 ```sh
-./docker_build.sh && (docker image save co2mon | pv | ssh cm01.local docker image load)
+# 自分のssh公開鍵を ssh_keys に書き込んでおく
+cat ~/.ssh/id_ed25519.pub >> ssh_keys
+# LANの同一セグメントから <ホスト名>.local でアクセスのみ行う場合
+./write_sd.sh <ホスト名>
+# リバースフォワードサーバを使う場合
+./write_sd.sh -p <リバースフォワードで使用するポート> -r <リバースフォワードサーバのIPアドレス> -P <リバースフォワードサーバのsshポート> -u <リバースフォワードサーバに接続するユーザ> -k <リバースフォワードサーバのホスト鍵> <ホスト名>
 ```
 
-## コンテナの起動
+RaspberryPiが起動したらログインする。
 
 ```sh
-docker run -d --privileged --rm -v /var/local/co2mon:/var/local/co2mon --name co2mon co2mon /sbin/init
+ssh pi@raspberrypi.local
+# パスワードは raspberry
 ```
 
-**ビルドして転送して起動**
+ログインできたら、RaspberryPiのシェルで以下のコマンドを実行する。
+（Ethernetなど、安定した回線で実行するのがおすすめ）
 
 ```
-./docker_build.sh && (docker image save co2mon | pv | ssh cm01.local docker image load) && ssh cm01.local 'docker stop co2mon; docker run -d --privileged --rm -v /var/local/co2mon:/var/local/co2mon --name co2mon co2mon /sbin/init'
+/boot/setup/setup_raspberrypi.sh
 ```
 
-または,
+セットアップが完了すると自動的に再起動する。
+以降は以下のコマンドでRaspberryPiにシェルログインできる。
 
 ```sh
-./build_send_run.sh
+ssh pi@<ホスト名>.local
 ```
 
-## コンテナのシェルを開く
+### アプリケーションのデプロイ
+
+- `deploy.sh`を実行すると、ビルド、Dockerイメージの転送、HecEyeとのペアリング、緯度経度の設定が行われる
+- `paring_url` はHecEyeでデバイスを追加したときにQRコードの下に表示されるURL
+- `target`はssh接続先として有効な文字列
+  - `RaspberryPiのセットアップ` で指定したホスト名を用いて、同一セグメントからアクセスする場合: <ホスト名>.local
+- `lat`は緯度, `lng` は経度
+  - 設置したい場所の`lat`と`lng`を知るには、[地理院地図](https://maps.gsi.go.jp/)や[OpenStreetMap](https://www.openstreetmap.org/)を使うとよい
 
 ```sh
-docker exec -it co2mon /bin/bash --login
+brew install pv  # 最初の1回のみ
+./deploy.sh <target> <paring_url> <lat> <lng>
 ```
-
-## ホスト用のserviceファイルを転送する
 
 ```sh
-(ssh cm01.local 'sudo tee /etc/systemd/system/co2mon.service') < co2mon.service
+# 例
+./deploy.sh pi@co2mon.local https://demo.hec-eye.jp/a/625c2d59bXXXXXXXX 35.70161 139.75318
 ```
 
-## RPi上のDATAディレクトリからローカルに同期する
+## co2monを使用しているプロジェクト
 
-ローカルの`DATA`は削除されるので注意
+- [Project AIRNORM](https://scrapbox.io/realglobe/Project_AIRNORM)
 
-```sh
-./sync_data_from_remote.sh
-```
 
-## send_graph.sh 単体をローカルでデバッグ
+## 開発
 
-```sh
-./docker_build.sh && (docker run --rm -v $(pwd)/TMP:/workdir/TMP -v $(pwd)/DATA:/var/local/co2mon/DATA co2mon sh -x /workdir/app/send_graph.sh)
-```
-
-## USBコネクタ
-
-- 左右はコネクタ側から見たときの左右
-- 指す場所はこれで仮決定として、udevの設定がよくわかるまでは `GPS=/dev/ttyUSB0` `CO2=/dev/ttyACM0` としておく（コンテナ内でもこのような名前で認識されているので）
-
-### Pi3
-
-### Pi4
-
-**GPS(上段左側)**
-
-```
-/dev/serial/by-path/platform-fd500000.pcie-pci-0000\:01\:00.0-usb-0\:1.3\:1.0-port0
-```
-
-**CO2センサ(上段右側)**
-
-```
-/dev/serial/by-path/platform-fd500000.pcie-pci-0000\:01\:00.0-usb-0\:1.1\:1.0
-```
-
-## メモ
-
-### デバッグ用
-
-```sh
-# shell
-ssh cm01.local -t "screen -d shell; screen -r shell || screen -S shell"
-
-# docker ps
-ssh cm01.local -t 'screen -d dockerps; screen -r dockerps || screen -S dockerps ./dockerps.sh'
-```
-
-### GPSの読み出し
-
-```sh
-gpspipe -w | jq -c --unbuffered 'select(.class == "TPV")' | while read -r l; do printf '%s %s\n' "$(date +%s)" "${l}"; done
-```
-
-### USBシリアルデバイスの自動判別(案)
-
-- `/dev/serial/by-path` 以下にすべてのシリアルデバイスが列挙される
-- `tail -n 10`でファイルに10行読み出す
-- 3秒経ったらtailのプロセスをkillしてwaitする
-- 読みだしたファイルの中身をみてデバイスの種類を判別する
+開発者向けの情報は [DEVELOPMENT.md](DEVELOPMENT.md) を見てください

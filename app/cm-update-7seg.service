@@ -1,0 +1,14 @@
+[Unit]
+Description=co2mon 7seg updating service
+After=network.target auditd.service cm-read.service
+
+[Service]
+#EnvironmentFile=/var/local/co2mon/DATA/conf
+WorkingDirectory=/workdir
+ExecStart=/workdir/app/update_7seg_d.sh
+Restart=always
+RestartSec=1
+StartLimitBurst=0
+
+[Install]
+WantedBy=multi-user.target
