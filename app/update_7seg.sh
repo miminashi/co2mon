@@ -1,5 +1,7 @@
 #!/bin/sh
 
+USB_7SEG="/dev/serial/by-path/platform-1c1c400.usb-usb-0:1:1.0"
+
 set -eu
 
 on_exit() {
@@ -23,14 +25,14 @@ trap error_handler EXIT
 # ここで通常の処理
 tmp="$(mktemp -d)"
 
-stty -F "/dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.2:1.0" raw 9600
+stty -F "${USB_7SEG}" raw 9600
 
 co2="$(tail -n 1 /var/local/co2mon/DATA/log/co2/latest |
   cut -d ' ' -f 2 |
   tr -d '\r' |
   sed -n 's/\(^.*\)\(co2=\)\([0-9][0-9]*\)\(.*$\)/\3/p')"
 if [ -n "${co2}" ]; then
-  echo $co2 > "/dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.2:1.0"
+  echo $co2 > "${USB_7SEG}"
 fi
 
 # ここで通常の終了処理

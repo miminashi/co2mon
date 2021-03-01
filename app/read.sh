@@ -2,15 +2,16 @@
 
 echo "read.sh started" >&2
 
+USB_CO2="/dev/serial/by-path/platform-1c1b400.usb-usb-0:1:1.0"
 # rotateは別プロセスで
 log_dir="/var/local/co2mon/DATA/log/co2"
 log="${log_dir}/latest"
 
 mkdir -p "${log_dir}"
 
-stty -F "/dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.4:1.0" raw 9600
+stty -F "${USB_CO2}" raw 9600
 
-cat "/dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.4:1.0" |
+cat "${USB_CO2}" |
 while read -r l; do
   printf '%s %s\n' "$(date +%s)" "${l}"
 done >> "${log}"
