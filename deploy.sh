@@ -8,14 +8,14 @@
 set -eu
 
 : ${1}
-: ${2}
-: ${3}
-: ${4}
+#: ${2}
+#: ${3}
+#: ${4}
 
 target_host="${1}"
-pairing_url="${2}"
-lat="${3}"
-lng="${4}"
+#pairing_url="${2}"
+#lat="${3}"
+#lng="${4}"
 
 pv --version > /dev/null || (echo "pvが見当たりません" >&2; exit 1)
 
@@ -27,8 +27,8 @@ ssh "${target_host}" "sudo systemctl daemon-reload; sudo systemctl enable co2mon
 #  pv |
 #  ssh "${target_host}" docker image load
 ./send_image.sh "${target_host}"
-./pairing.sh "${target_host}" "${pairing_url}"
-./set_location.sh "${target_host}" "${lat}" "${lng}"
+#./pairing.sh "${target_host}" "${pairing_url}"
+#./set_location.sh "${target_host}" "${lat}" "${lng}"
 ssh "${target_host}" "sudo systemctl start co2mon.service"
 
 say 'オワッタヨ'
