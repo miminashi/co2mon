@@ -17,7 +17,6 @@ on_exit() {
 # エラー時の終了処理
 on_error_exit() {
   printf '\e[31m%s: エラー終了\e[m\n' "${cmdname}" 1>&2
-  on_exit
 }
 
 error() {
@@ -32,9 +31,11 @@ trap on_error_exit EXIT
 
 : ${1}
 : ${2}
+: ${3}
 
 target_host="${1}"
-webhook_url="${2}"
+name="${2}"
+webhook_url="${3}"
 
 pv --version > /dev/null || (echo "pvが見当たりません" >&2; exit 1)
 
@@ -43,6 +44,7 @@ ssh "${target_host}" "sudo systemctl stop co2mon.service" || echo "co2mon.servic
 cat co2mon.service | ssh "${target_host}" "sudo tee /etc/systemd/system/co2mon.service > /dev/null"
 ssh "${target_host}" "sudo systemctl daemon-reload; sudo systemctl enable co2mon.service"
 ./send_image.sh "${target_host}"
+./set_config.sh "${target_host}" name "${name}"
 ./set_config.sh "${target_host}" webhook_url "${webhook_url}"
 ssh "${target_host}" "sudo systemctl start co2mon.service"
 

@@ -2,6 +2,7 @@
 
 set -eu
 
+CONF_DIR="/var/local/co2mon/CONF"
 PLOT_INTERVAL=21600  # 6h
 
 # curlがなぜかca-certificates.crtを読み込んでくれない問題のワークアラウンド
@@ -33,13 +34,13 @@ date="$(date +%s)"
 curl -h > /dev/null 2>&1 || error 'curl が見つかりません'
 jq -h > /dev/null 2>&1 || error 'jq が見つかりません'
 
-endpoint_info="/var/local/co2mon/DATA/endpoint_info"
-image_url="$(cat "${endpoint_info}" | grep 'imageUrl: ' | cut -d ' ' -f 2 | tr -d '\r')"
-name="$(cat "${endpoint_info}" | grep 'name: ' | cut -d ' ' -f 2- | tr -d '\r')"
-token="$(cat "${endpoint_info}" | grep '^token: ' | cut -d ' ' -f 2 | tr -d '\r')"
-#if [ -z "${info_url}" ] || [ -z "${token}" ]; then
-if [ -z "${image_url}" ] || [ -z "${token}" ]; then
-  error 'endpoint_info が正しくありません'
+webhook_url="$(cat "${CONF_DIR}"/webhook_url 2>/dev/null | grep '')"
+if [ -z "${webhook_url}" ]; then
+  error 'webhook_url が設定されていません'
+fi
+name="$(cat "${CONF_DIR}"/name 2>/dev/null | grep '')"
+if [ -z "${name}" ]; then
+  error 'name が設定されていません'
 fi
 
 ## 過去6時間ぶんのCO2濃度履歴を取得する
@@ -54,8 +55,8 @@ paste "${tmp}"/co2_last_6h.jstdate "${tmp}"/co2_last_6h.ppm > "${tmp}"/co2_last_
 ## グラフを描画する
 tail_date_t="${date}"
 head_date_t="$((tail_date_t - PLOT_INTERVAL))"
-tail_date="$(TZ="JST-9" /workdir/app/utconv -r ${tail_date_t})"
-head_date="$(TZ="JST-9" /workdir/app/utconv -r ${head_date_t})"
+tail_date="$(TZ="JST-9" /workdir/app/utconv -r "${tail_date_t}")"
+head_date="$(TZ="JST-9" /workdir/app/utconv -r "${head_date_t}")"
 echo "${head_date}" >&2
 echo "${head_date_t}" >&2
 tail_date_Y="$(echo "${tail_date}" | cut -c 1-4)"
@@ -85,7 +86,7 @@ EOF
 cp "${tmp}"/graph.png /var/local/co2mon/DATA/graph.png
 
 ## グラフ画像を送信する
-curl -s -w '\n' -X POST -F "file=@${tmp}/graph.png" "${image_url}?token=${token}"
+curl -s -w '\n' -X POST -F "file=@${tmp}/graph.png" "${webhook_url}"
 
 # ここで通常の終了処理
 on_exit
