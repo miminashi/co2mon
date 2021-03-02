@@ -2,5 +2,5 @@
 
 while :; do
   /workdir/app/send_graph.sh
-  sleep 300
+  sleep 120
 done
