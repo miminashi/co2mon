@@ -55,7 +55,7 @@ if [ -n "${latest_gps_tpv}" ]; then
   lat="$(echo "${latest_gps_tpv}" | jq -r .lat)"
   lng="$(echo "${latest_gps_tpv}" | jq -r .lon)"
   alt="$(echo "${latest_gps_tpv}" | jq -r .alt | grep -v 'null' | grep '.' || echo 0.0)"
-elif cat /var/local/co2mon/DATA/location | grep '.'; then
+elif cat /var/local/co2mon/DATA/location 2>/dev/null | grep '.'; then
   lat="$(cat /var/local/co2mon/DATA/location | cut -d ',' -f 1)"
   lng="$(cat /var/local/co2mon/DATA/location | cut -d ',' -f 2)"
   alt="$(cat /var/local/co2mon/DATA/location | cut -d ',' -f 3)"
