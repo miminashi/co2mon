@@ -2,5 +2,5 @@
 
 while :; do
   /workdir/app/send_beacon.sh
-  sleep 10
+  sleep 30
 done
