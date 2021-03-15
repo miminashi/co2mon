@@ -1,18 +1,21 @@
 #!/bin/sh
 
 #
+# ターゲットの設定ストアに設定値を書込します
+#
 # 使い方:
 #   ./set_config.sh TARGET KEY VALUE
 #
 
 set -eu
 
-: ${1}
-: ${2}
-: ${3}
+. ./config
 
-target="${1}"
-key="${2}"
-value="${3}"
+# 引数のチェック
+target="${1:?"第1引数にターゲット(ssh接続先)を与えてください"}"
+key="${2:?"第2引数に設定キーを与えてください"}"
+value="${3:?"第3引数に設定値を与えてください"}"
 
-ssh "${target}" "docker run --rm -v /var/local/co2mon:/var/local/co2mon co2mon /workdir/app/set_config.sh \"${key}\" \"${value}\""
+key_file="${CONF_DIR}"/"${key}"
+
+ssh "${target}" "sudo mkdir -p \"${CONF_DIR}\" && echo \"${value}\" | sudo tee \"${key_file}\" > /dev/null && cat \"${key_file}\""
