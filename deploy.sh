@@ -2,7 +2,7 @@
 
 #
 # 使い方:
-#   ./deploy.sh <target> <webhook_url>
+#   ./deploy.sh <target> <name> <webhook_url> <usb_co2> <usb_7seg>
 #
 
 set -eu
@@ -29,23 +29,26 @@ trap on_error_exit EXIT
 
 # ここから通常の処理
 
-: ${1}
-: ${2}
-: ${3}
+# 引数のチェック
+target_host="${1:?"第1引数にターゲットを与えてください"}"
+name="${2:-""}"
+webhook_url="${3:-""}"
+usb_co2="${4:-""}"
+usb_7seg="${5:-""}"
 
-target_host="${1}"
-name="${2}"
-webhook_url="${3}"
-
+# コマンドの存在確認
 pv --version > /dev/null || (echo "pvが見当たりません" >&2; exit 1)
+which say > /dev/null || (echo "sayが見当たりません" >&2; exit 1)
 
 ./docker_build.sh
-ssh "${target_host}" "sudo systemctl stop co2mon.service" || echo "co2mon.service not loaded" >&2
-cat co2mon.service | ssh "${target_host}" "sudo tee /etc/systemd/system/co2mon.service > /dev/null"
-ssh "${target_host}" "sudo systemctl daemon-reload; sudo systemctl enable co2mon.service"
 ./send_image.sh "${target_host}"
-./set_config.sh "${target_host}" name "${name}"
-./set_config.sh "${target_host}" webhook_url "${webhook_url}"
+ssh "${target_host}" "sudo systemctl stop co2mon.service" || echo "co2mon.service not loaded" >&2
+ssh "${target_host}" "sudo tee /etc/systemd/system/co2mon.service > /dev/null" < co2mon.service
+ssh "${target_host}" "sudo systemctl daemon-reload; sudo systemctl enable co2mon.service"
+test -n "${name}"        && ./set_config.sh "${target_host}" name "${name}"
+test -n "${webhook_url}" && ./set_config.sh "${target_host}" webhook_url "${webhook_url}"
+test -n "${usb_co2}"     && ./set_config.sh "${target_host}" usb_co2 "${usb_co2}"
+test -n "${usb_7seg}"    && ./set_config.sh "${target_host}" usb_7seg "${usb_7seg}"
 ssh "${target_host}" "sudo systemctl start co2mon.service"
 
 say 'オワッタヨ'
