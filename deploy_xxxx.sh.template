@@ -1,0 +1,37 @@
+#!/bin/sh
+
+#
+# deploy_xxxx.sh.template
+#
+# 説明:
+#   deploy.sh のホストごとのラッパーの雛形。
+#   deploy.sh のラッパーは必ずしも使わなくてもよいが、
+#   ハードウェアの構成の異なる複数のAIRNORMに対して
+#   デプロイする場合に用意しておくと便利。
+#
+# 使い方:
+#   ターゲットのホストに `ssh ncm01` でアクセスできる場合、
+#     cp deploy_xxxx.sh.template deploy_ncm01.sh    # 雛形をコピーする
+#     chmod +x ./deploy_ncm01.sh                    # 実行権限を付与する
+#     vim deploy_ncm01.sh                           # 任意のテキストエディタで内容を修正する
+#     ./deploy_ncm01.sh                             # ncm01 にco2monをデプロイ
+#
+# 変数の説明:
+#        TARGET: sshコマンドが認識できるホスト名
+#                (OSが名前解決できるホスト名か、~/.ssh/config に設定した名前)
+#          NAME: グラフに表示される名前
+#                (AIRNORMの設置場を表す名前にするとよい)
+#   WEBHOOK_URL: DiscordのWebhook URL
+#       USB_CO2: usb_co2デバイス名
+#                (ターゲットホスト上で `ls -1 /dev/serial/by-path` を実行して表示されるもののうちのどれか)
+#      USB_7SEG: usb_7segデバイス名
+#                (ターゲットホスト上で `ls -1 /dev/serial/by-path` を実行して表示されるもののうちのどれか)
+#
+
+TARGET=""
+NAME=""
+WEBHOOK_URL=""
+USB_CO2="/dev/serial/by-path/platform-1c1b400.usb-usb-0:1:1.0"
+USB_7SEG="/dev/serial/by-path/platform-1c1c400.usb-usb-0:1:1.0"
+
+./deploy.sh "${TARGET}" "${NAME}" "${WEBHOOK_URL}" "${USB_CO2}" "${USB_7SEG}"
