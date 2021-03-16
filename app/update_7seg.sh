@@ -1,11 +1,12 @@
 #!/bin/sh
 
-USB_7SEG="/dev/serial/by-path/platform-1c1c400.usb-usb-0:1:1.0"
+CONF_DIR="/var/local/co2mon/CONF"
 
 set -eu
 
 on_exit() {
-  rm -rf "${tmp}"
+  #rm -rf "${tmp}"
+  :
 }
 
 error_handler() {
@@ -23,7 +24,12 @@ error() {
 trap error_handler EXIT
 
 # ここで通常の処理
-tmp="$(mktemp -d)"
+
+USB_7SEG_CONF="${CONF_DIR}/usb_7seg"
+USB_7SEG="$(cat "${USB_7SEG_CONF}")"
+test -n "${USB_7SEG}" || error "usb_7seg の設定が空です"
+
+#tmp="$(mktemp -d)"
 
 stty -F "${USB_7SEG}" raw 9600
 
