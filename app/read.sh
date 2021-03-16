@@ -2,7 +2,11 @@
 
 echo "read.sh started" >&2
 
-USB_CO2="/dev/serial/by-path/platform-1c1b400.usb-usb-0:1:1.0"
+CONF_DIR="/var/local/co2mon/CONF"
+USB_CO2_CONF="${CONF_DIR}/usb_co2"
+USB_CO2="$(cat "${USB_CO2_CONF}")"
+test -z "${USB_CO2}" && echo "usb_co2 の設定が空です" >&2 && exit 1
+
 # rotateは別プロセスで
 log_dir="/var/local/co2mon/DATA/log/co2"
 log="${log_dir}/latest"
