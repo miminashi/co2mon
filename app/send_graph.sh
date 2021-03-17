@@ -67,21 +67,41 @@ tail_date_M="$(echo "${tail_date}" | cut -c 11-12)"
 title="$(printf '%s のCO2濃度\\n(%s/%s/%s %s:%s現在, 過去6時間)' "${name}" "${tail_date_Y}" "${tail_date_m}" "${tail_date_d}" "${tail_date_H}" "${tail_date_M}")"
 gnuplot -p <<EOF
 # 共通の設定
-set title "${title}"
+#set title "${title}"
+set label 1 right at graph 0.96,0.96 "${title}" front
 set nokey
 set timefmt "%Y%m%d%H%M%S"
+# 枠の設定
+set lmargin 0
+set rmargin 0
+set tmargin 0
+set bmargin 0
+# 軸の共通設定
+set tics in front
 # x軸の設定
 set format x "%m/%d\n%k時"
 set xdata time
 set xrange ["${head_date}":"${tail_date}"]
 set xtics "${head_date}", 3600
+set xtics offset 0,graph 0.05
+set xtics font "Verdana,8"
 # y軸の設定
 set ylabel 'CO2濃度(ppm)'
-set yrange [300:2000]
+set yrange [250:2000]
+set ytics offset graph 0.08
+set ytics 400,600,1000
+set ytics font "Verdana,24"
+# 塗りつぶしの設定
+set style fill solid 1.0 noborder
+set style function filledcurves y1=0
+f1000(x) = 1000
+f2000(x) = 2000
 # PNGの描画
-set terminal pngcairo size 1024,768 font 'Verdana,22'
+#set terminal pngcairo size 1024,768 font 'Verdana,8'
+set terminal pngcairo size 1280,960 font 'Verdana,8'
 set output '${tmp}/graph.png'
-plot '${tmp}/co2_last_6h.jstdate_ppm' using 1:2 with lines lc '#0000ff'
+#plot '${tmp}/co2_last_6h.jstdate_ppm' using 1:2 with lines lc '#0000ff'
+plot f2000(x) fs solid 0.8 lc rgb "pink", f1000(x) fs solid 0.2 lc rgb "green", '${tmp}/co2_last_6h.jstdate_ppm' using 1:2 with lines lc 'grey10' lw 3
 EOF
 
 cp "${tmp}"/graph.png /var/local/co2mon/DATA/graph.png
