@@ -63,7 +63,8 @@ tail_date_Y="$(echo "${tail_date}" | cut -c 1-4)"
 tail_date_m="$(echo "${tail_date}" | cut -c 5-6)"
 tail_date_d="$(echo "${tail_date}" | cut -c 7-8)"
 tail_date_H="$(echo "${tail_date}" | cut -c 9-10 | sed 's/^0//')"
-title="$(printf '%s のCO2濃度\\n(%s/%s/%s %s時現在, 過去6時間)' "${name}" "${tail_date_Y}" "${tail_date_m}" "${tail_date_d}" "${tail_date_H}")"
+tail_date_M="$(echo "${tail_date}" | cut -c 11-12)"
+title="$(printf '%s のCO2濃度\\n(%s/%s/%s %s:%s現在, 過去6時間)' "${name}" "${tail_date_Y}" "${tail_date_m}" "${tail_date_d}" "${tail_date_H}" "${tail_date_M}")"
 gnuplot -p <<EOF
 # 共通の設定
 set title "${title}"
