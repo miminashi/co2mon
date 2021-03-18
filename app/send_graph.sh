@@ -82,6 +82,7 @@ set tmargin 0
 set bmargin 0
 # 軸の共通設定
 set tics in front
+set grid front
 # x軸の設定
 set format x "%m/%d\n%k時"
 set xdata time
@@ -92,9 +93,9 @@ set xtics font "Verdana,8"
 # y軸の設定
 set ylabel 'CO2濃度(ppm)'
 set yrange [250:2000]
-set ytics offset graph 0.08
+set ytics offset graph 0.01 left
 set ytics 400,600,1000
-set ytics font "Verdana,24"
+set ytics font "Verdana,32"
 # 塗りつぶしの設定
 set style fill solid 1.0 noborder
 set style function filledcurves y1=0
@@ -102,10 +103,9 @@ f1000(x) = 1000
 f2000(x) = 2000
 # PNGの描画
 #set terminal pngcairo size 1024,768 font 'Verdana,8'
-set terminal pngcairo size 1280,960 font 'Verdana,8'
+set terminal pngcairo size 1280,960 font 'Verdana,8' rounded
 set output '${tmp}/graph.png'
-#plot '${tmp}/co2_last_6h.jstdate_ppm' using 1:2 with lines lc '#0000ff'
-plot f2000(x) fs solid 0.8 lc rgb "pink", f1000(x) fs solid 0.2 lc rgb "green", '${tmp}/co2_last_6h.jstdate_ppm' using 1:2 with lines lc 'grey10' lw 3
+plot f2000(x) fs solid 0.8 lc rgb "pink", f1000(x) fs solid 0.2 lc rgb "green", '${tmp}/co2_last_6h.jstdate_ppm' using 1:2 with lines lc 'dark-blue' lw 5
 EOF
 
 cp "${tmp}"/graph.png /var/local/co2mon/DATA/graph.png
