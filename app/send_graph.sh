@@ -3,7 +3,6 @@
 set -eu
 
 CONF_DIR="/var/local/co2mon/CONF"
-PLOT_INTERVAL=21600  # 6h
 
 # curlがなぜかca-certificates.crtを読み込んでくれない問題のワークアラウンド
 export CURL_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
@@ -42,19 +41,24 @@ name="$(cat "${CONF_DIR}"/name 2>/dev/null | grep '')"
 if [ -z "${name}" ]; then
   error 'name が設定されていません'
 fi
+plot_period="$(cat "${CONF_DIR}"/plot_period 2>/dev/null | grep '')"
+if [ -z "${plot_period}" ]; then
+  plot_period=21600  # デフォルト=6時間
+fi
 
-## 過去6時間ぶんのCO2濃度履歴を取得する
-tail -n 22000 /var/local/co2mon/DATA/log/co2/latest |
+## plot_periodに指定された期間のCO2濃度履歴を取得する(デフォルト: 6時間)
+tail -n $((plot_period + 1000)) /var/local/co2mon/DATA/log/co2/latest |
   tr -d '\r' |
-  awk -v pt="$((date - 21600))" '$1 > pt' |
+  awk -v pt="$((date - plot_period))" '$1 > pt' |
   sed -n 's/\(^[0-9][0-9]*\)\(.*\)\(co2=\)\([0-9][0-9]*\)\(.*$\)/\1 \4/p' > "${tmp}"/co2_last_6h.timet_ppm
 cut -d ' ' -f 1 < "${tmp}"/co2_last_6h.timet_ppm | TZ="JST-9" /workdir/app/utconv -r > "${tmp}"/co2_last_6h.jstdate
 cut -d ' ' -f 2 < "${tmp}"/co2_last_6h.timet_ppm > "${tmp}"/co2_last_6h.ppm
 paste "${tmp}"/co2_last_6h.jstdate "${tmp}"/co2_last_6h.ppm > "${tmp}"/co2_last_6h.jstdate_ppm
 
+
 ## グラフを描画する
 tail_date_t="${date}"
-head_date_t="$((tail_date_t - PLOT_INTERVAL))"
+head_date_t="$((tail_date_t - plot_period))"
 tail_date="$(TZ="JST-9" /workdir/app/utconv -r "${tail_date_t}")"
 head_date="$(TZ="JST-9" /workdir/app/utconv -r "${head_date_t}")"
 echo "${head_date}" >&2
