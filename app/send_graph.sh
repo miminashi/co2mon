@@ -3,6 +3,7 @@
 set -eu
 
 CONF_DIR="/var/local/co2mon/CONF"
+DEFALT_PLOT_RANGE=21600           # 6時間
 
 # curlがなぜかca-certificates.crtを読み込んでくれない問題のワークアラウンド
 export CURL_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
@@ -33,17 +34,17 @@ date="$(date +%s)"
 curl -h > /dev/null 2>&1 || error 'curl が見つかりません'
 jq -h > /dev/null 2>&1 || error 'jq が見つかりません'
 
-webhook_url="$(cat "${CONF_DIR}"/webhook_url 2>/dev/null | grep '')"
+webhook_url="$(cat "${CONF_DIR}"/webhook_url 2>/dev/null || :)"
 if [ -z "${webhook_url}" ]; then
   error 'webhook_url が設定されていません'
 fi
-name="$(cat "${CONF_DIR}"/name 2>/dev/null | grep '')"
+name="$(cat "${CONF_DIR}"/name 2>/dev/null || :)"
 if [ -z "${name}" ]; then
   error 'name が設定されていません'
 fi
-plot_period="$(cat "${CONF_DIR}"/plot_period 2>/dev/null | grep '')"
+plot_period="$(cat "${CONF_DIR}"/plot_period 2>/dev/null || :)"
 if [ -z "${plot_period}" ]; then
-  plot_period=21600  # デフォルト=6時間
+  plot_period="${DEFALT_PLOT_RANGE}"
 fi
 
 ## plot_periodに指定された期間のCO2濃度履歴を取得する(デフォルト: 6時間)
