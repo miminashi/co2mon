@@ -14,7 +14,7 @@ RaspberryPiベースのコネクテッドなCO2モニタ
 - ACアダプタ
   - [スイッチングACアダプター（USB ACアダプター） Type-Cオス 5.1V3.8A](https://akizukidenshi.com/catalog/g/gM-14935/) がおすすめ
 
-# オプショナル
+### オプショナル
 
 - PIX-MT100
   - セルラー回線（LTE）で使用する場合のみ
