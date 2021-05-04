@@ -2,13 +2,20 @@
 
 ![airnorm_mobile](airnorm_mobile.jpg)
 
-Hec-EyeにつながるCO2モニタ
+RaspberryPiベースのコネクテッドなCO2モニタ
 
 ## 必要なハードウェア
+
+### 必須
 
 - RaspberryPi 4
 - [usb_co2](https://github.com/realglobe-Inc/usb_co2)
 - [usb_7seg](https://github.com/realglobe-Inc/usb_7seg)
+- ACアダプタ
+  - [スイッチングACアダプター（USB ACアダプター） Type-Cオス 5.1V3.8A](https://akizukidenshi.com/catalog/g/gM-14935/) がおすすめ
+
+# オプショナル
+
 - PIX-MT100
   - セルラー回線（LTE）で使用する場合のみ
 - USB接続のGPS受信機
@@ -19,35 +26,88 @@ Hec-EyeにつながるCO2モニタ
 
 ## デプロイ
 
+- 手順がRaspberryPiのセットアップとアプリケーションのセットアップに分かれています
+- リバースポートフォワードを使用すると、RaspberryPiがどこのネットワークに存在していてもsshでシェルログインが可能になります
+
 ### RaspberryPiのセットアップ
 
-microSDの書き込みを行う。
+#### microSDの書き込み
+
+microSDの書込には、`write_sd.sh` を使用します。
+
+`write_sd.sh` はカレントディレクトリに `ssh_keys` ファイルが存在することを期待するので、以下のコマンドを実行して、ssh公開鍵を `ssh_keys` に書き込んでおきます。
 
 ```sh
-# 自分のssh公開鍵を ssh_keys に書き込んでおく
 cat ~/.ssh/id_ed25519.pub >> ssh_keys
-# LANの同一セグメントから <ホスト名>.local でアクセスのみ行う場合
-./write_sd.sh <ホスト名>
-# リバースフォワードサーバを使う場合
-./write_sd.sh -p <リバースフォワードで使用するポート> -r <リバースフォワードサーバのIPアドレス> -P <リバースフォワードサーバのsshポート> -u <リバースフォワードサーバに接続するユーザ> -k <リバースフォワードサーバのホスト鍵> <ホスト名>
 ```
 
-RaspberryPiが起動したらログインする。
+次に、`write_sd.sh` を実行します。
+`<ホスト名>` は、設定対象のRaspberryPiに設定したいホスト名です。
 
 ```sh
-ssh pi@raspberrypi.local
+./write_sd.sh <ホスト名>
+```
+
+#### 起動と接続の確認
+
+書込が終わったら、RaspberryPiにmicroSDを挿し替えて、イーサネット（LANケーブル）と電源を接続する。
+1分ほど待ってOSが起動したら、次のコマンドを実行する。
+
+```sh
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no pi@raspberrypi.local /boot/setup/setup_raspberrypi.sh
 # パスワードは raspberry
 ```
 
-ログインできたら、RaspberryPiのシェルで以下のコマンドを実行する。
-（Ethernetなど、安定した回線で実行するのがおすすめ）
+セットアップが完了すると自動的に再起動する。
+これ以降は以下のコマンドでRaspberryPiにシェルログインできる。
 
+```sh
+ssh pi@<ホスト名>.local
 ```
-/boot/setup/setup_raspberrypi.sh
+
+### RaspberryPiのセットアップ（sshリバースポートフォワードを使用する場合）
+
+#### microSDの書き込み
+
+microSDの書込には、`write_sd.sh` を使用します。
+
+`write_sd.sh` はカレントディレクトリに `ssh_keys` ファイルが存在することを期待するので、以下のコマンドを実行して、ssh公開鍵を `ssh_keys` に書き込んでおきます。
+
+```sh
+cat ~/.ssh/id_ed25519.pub >> ssh_keys
+```
+
+次に、`write_sd.sh` を実行します。
+`<ホスト名>` は、設定対象のRaspberryPiに設定したいホスト名です。
+
+```sh
+./write_sd.sh -p <リバースフォワードで使用するポート> -r <リバースフォワードサーバのIPアドレス> -u <リバースフォワードサーバに接続するユーザ> -k <リバースフォワードサーバのホスト鍵> <ホスト名>
+```
+
+リバースフォワードに使用するsshサーバが22番以外で接続を待ち受けている場合は、以下ように`-P`オプションをつけて実行します。
+
+```sh
+./write_sd.sh -p <リバースフォワードで使用するポート> -r <リバースフォワードサーバのIPアドレス> -P <リバースフォワードサーバのsshポート> -u <リバースフォワードサーバに接続するユーザ> -k <リバースフォワードサーバのホスト鍵> <ホスト名>
+```
+
+#### 起動と接続の確認
+
+書込が終わったら、RaspberryPiにmicroSDを挿し替えて、イーサネット（LANケーブル）と電源を接続する。
+1分ほど待ってOSが起動したら、次のコマンドを実行する。
+
+```sh
+ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no pi@raspberrypi.local /boot/setup/setup_raspberrypi.sh
+# パスワードは raspberry
 ```
 
 セットアップが完了すると自動的に再起動する。
-以降は以下のコマンドでRaspberryPiにシェルログインできる。
+これ以降は以下のコマンドでRaspberryPiにシェルログインできる。
+
+```sh
+ssh pi@<ホスト名>
+```
+
+または、
 
 ```sh
 ssh pi@<ホスト名>.local
