@@ -2,14 +2,7 @@
 
 #
 # USAGE 使い方:
-#   pi@raspberrypi$ export GITHUB_USERNAME=<your username>
-#   pi@raspberrypi$ export NEW_HOSTNAME=<new hostname>
-#   pi@raspberrypi$ export SSH_RPFW_SERVER=<new hostname>
-#   pi@raspberrypi$ export SSH_RPFW_SERVER_PORT=<new hostname>
-#   pi@raspberrypi$ export SSH_RPFW_PORT=<new hostname>
-#   pi@raspberrypi$ export SSH_RPFW_HOST_KEY=<new hostname>
-#   pi@raspberrypi$ export SSH_RPFW_HOST_KEY_TYPE=<new hostname>
-#   pi@raspberrypi$ curl -s https://raw.githubusercontent.com/realglobe-Inc/co2mon/master/setup_raspberrypi.sh | sh -s
+#   /boot/setup/setup_raspberrypi.sh
 #
 
 
@@ -82,6 +75,10 @@ if [ -d /boot/setup/ssh_rpfw ]; then
   rpfw_server_user="$(cat ${ssh_rpfw_dir}/rpfw_server_user)"
   rpfw_server_key="$(cat ${ssh_rpfw_dir}/rpfw_server_key)"
 
+  if [ "${rpfw_server_port}" = "" ]; then
+    rpfw_server_port="22"
+  fi
+
   # serviceファイルの作成
   sudo tee /etc/systemd/system/ssh-rpfw.service <<EOF
 [Unit]
@@ -105,7 +102,11 @@ EOF
   sudo systemctl enable ssh-rpfw.service
 
   # known_hosts ファイルにリバースフォワードサーバの公開鍵を登録する
-  printf '[%s]:%s %s\n' "${rpfw_server}" "${rpfw_server_port}" "${rpfw_server_key}" | sudo tee /etc/ssh/ssh_known_hosts > /dev/null
+  if [ "${rpfw_server_port}" = "22" ]; then
+    printf '%s %s\n' "${rpfw_server}" "${rpfw_server_key}" | sudo tee /etc/ssh/ssh_known_hosts > /dev/null
+  else
+    printf '[%s]:%s %s\n' "${rpfw_server}" "${rpfw_server_port}" "${rpfw_server_key}" | sudo tee /etc/ssh/ssh_known_hosts > /dev/null
+  fi
 
   # 鍵ペアのコピー
   cp "${ssh_rpfw_dir}"/id_ed25519 ~/.ssh
@@ -114,9 +115,10 @@ EOF
   chmod 644 ~/.ssh/id_ed25519.pub
 fi
 
+# ユーティリティのインストール
+sudo apt-get -y install bc pax ncompress vim screen
+
 # GNU screen
-sudo apt-get update
-sudo apt-get -y install screen
 cat <<'EOF' > /home/pi/.screenrc
 startup_message off
 vbell off
@@ -125,14 +127,6 @@ termcapinfo xterm* ti@:te@
 term xterm-color
 shell bash
 EOF
-
-# POSIX compatibility
-# POSIX互換性のための設定
-sudo apt-get -y install bc pax ncompress
-
-# other utility
-# その他のユーティリティ
-sudo apt-get -y install vim
 
 # sshd
 sudo tee /etc/ssh/sshd_config > /dev/null <<'EOF'
@@ -361,7 +355,7 @@ sudo raspi-config nonint do_hostname "${new_hostname}"
 #cat ~/.ssh/id_ed25519.pub
 
 echo "セットアップが完了しました。再起動します"
-sudo shutdown -r now
+sudo nohup shutdown -r now &
 
 # 異常終了時ハンドラの解除
 trap '' EXIT
