@@ -4,11 +4,10 @@ DEFAULT_TARGET_DISK="/dev/disk2"
 
 set -eu
 
-#image_url="http://downloads.raspberrypi.org/raspios_lite_armhf/images/raspios_lite_armhf-2020-05-28/2020-05-27-raspios-buster-lite-armhf.zip"
-torrent_url="http://downloads.raspberrypi.org/raspios_lite_armhf/images/raspios_lite_armhf-2020-05-28/2020-05-27-raspios-buster-lite-armhf.zip.torrent"
-archive="./2020-05-27-raspios-buster-lite-armhf.zip"
-image="./2020-05-27-raspios-buster-lite-armhf.img"
-sha256="f5786604be4b41e292c5b3c711e2efa64b25a5b51869ea8313d58da0b46afc64"
+torrent_url="https://downloads.raspberrypi.org/raspios_lite_armhf/images/raspios_lite_armhf-2021-03-25/2021-03-04-raspios-buster-armhf-lite.zip.torrent"
+archive="./2021-03-04-raspios-buster-armhf-lite.zip"
+image="./2021-03-04-raspios-buster-armhf-lite.img"
+sha256="ea92412af99ec145438ddec3c955aa65e72ef88d84f3307cea474da005669d39"
 
 on_exit() {
   rm -rf "${tmp}"
