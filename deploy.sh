@@ -2,7 +2,7 @@
 
 #
 # 使い方:
-#   ./deploy.sh <target> <name> <webhook_url> <usb_co2> <usb_7seg>
+#   ./deploy.sh <target> <name> <webhook_url>
 #
 
 set -eu
@@ -33,8 +33,8 @@ trap on_error_exit EXIT
 target_host="${1:?"第1引数にターゲットを与えてください"}"
 name="${2:-""}"
 webhook_url="${3:-""}"
-usb_co2="${4:-""}"
-usb_7seg="${5:-""}"
+#usb_co2="${4:-""}"
+#usb_7seg="${5:-""}"
 
 # コマンドの存在確認
 pv --version > /dev/null || (echo "pvが見当たりません" >&2; exit 1)
@@ -47,8 +47,8 @@ ssh "${target_host}" "sudo tee /etc/systemd/system/co2mon.service > /dev/null" <
 ssh "${target_host}" "sudo systemctl daemon-reload; sudo systemctl enable co2mon.service"
 test -n "${name}"        && ./set_config.sh "${target_host}" name "${name}"
 test -n "${webhook_url}" && ./set_config.sh "${target_host}" webhook_url "${webhook_url}"
-test -n "${usb_co2}"     && ./set_config.sh "${target_host}" usb_co2 "${usb_co2}"
-test -n "${usb_7seg}"    && ./set_config.sh "${target_host}" usb_7seg "${usb_7seg}"
+#test -n "${usb_co2}"     && ./set_config.sh "${target_host}" usb_co2 "${usb_co2}"
+#test -n "${usb_7seg}"    && ./set_config.sh "${target_host}" usb_7seg "${usb_7seg}"
 ssh "${target_host}" "sudo systemctl start co2mon.service"
 
 say 'オワッタヨ'
