@@ -2,20 +2,20 @@
 
 echo "read.sh started" >&2
 
-CONF_DIR="/var/local/co2mon/CONF"
-USB_CO2_CONF="${CONF_DIR}/usb_co2"
-USB_CO2="$(cat "${USB_CO2_CONF}")"
-test -z "${USB_CO2}" && echo "usb_co2 の設定が空です" >&2 && exit 1
+LOG_DIR="/var/local/co2mon/DATA/log/co2"  # rotateは別プロセスで
+LOG="${log_dir}/latest"
+DEFAULT_USB_CO2="/dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.4:1.0"
 
-# rotateは別プロセスで
-log_dir="/var/local/co2mon/DATA/log/co2"
-log="${log_dir}/latest"
+usb_co2="$(./app/get_config.sh usb_co2)"
+if [ -z "${usb_co2}" ]; then
+  usb_co2="${DEFAULT_USB_CO2}"
+fi
 
-mkdir -p "${log_dir}"
+mkdir -p "${LOG_DIR}"
 
-stty -F "${USB_CO2}" raw 9600
+stty -F "${usb_co2}" raw 9600
 
-cat "${USB_CO2}" |
+cat "${usb_co2}" |
 while read -r l; do
   printf '%s %s\n' "$(date +%s)" "${l}"
-done >> "${log}"
+done >> "${LOG}"
