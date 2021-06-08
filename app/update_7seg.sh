@@ -1,16 +1,16 @@
 #!/bin/sh
 
-CONF_DIR="/var/local/co2mon/CONF"
+LOG="/var/local/co2mon/DATA/log/co2/latest"
+DEFAULT_USB_7SEG="/dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.2:1.0"
 
-set -eu
+set -eux
 
 on_exit() {
-  #rm -rf "${tmp}"
   :
 }
 
+# エラー時の処理
 error_handler() {
-  # エラー時の処理
   on_exit
 }
 
@@ -24,21 +24,19 @@ error() {
 trap error_handler EXIT
 
 # ここで通常の処理
+usb_7seg="$(./app/get_config.sh usb_7seg)" || usb_7seg=""
+if [ -z "${usb_7seg}" ]; then
+  usb_7seg="${DEFAULT_USB_7SEG}"
+fi
 
-USB_7SEG_CONF="${CONF_DIR}/usb_7seg"
-USB_7SEG="$(cat "${USB_7SEG_CONF}")"
-test -n "${USB_7SEG}" || error "usb_7seg の設定が空です"
+stty -F "${usb_7seg}" raw 9600
 
-#tmp="$(mktemp -d)"
-
-stty -F "${USB_7SEG}" raw 9600
-
-co2="$(tail -n 1 /var/local/co2mon/DATA/log/co2/latest |
+co2="$(tail -n 1 "${LOG}" |
   cut -d ' ' -f 2 |
   tr -d '\r' |
   sed -n 's/\(^.*\)\(co2=\)\([0-9][0-9]*\)\(.*$\)/\3/p')"
 if [ -n "${co2}" ]; then
-  echo $co2 > "${USB_7SEG}"
+  echo "${co2}" > "${usb_7seg}"
 fi
 
 # ここで通常の終了処理
