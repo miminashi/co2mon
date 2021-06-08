@@ -27,7 +27,7 @@ trap error_handler EXIT
 key="${1}"
 
 key_file="${CONF_DIR}"/"${key}"
-cat "${key_file}"
+cat "${key_file}" 2>/dev/null
 
 # ここで通常の終了処理
 on_exit
