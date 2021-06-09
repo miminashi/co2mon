@@ -2,6 +2,8 @@
 
 set -eu
 
+CONF_DIR="/var/local/co2mon/CONF"
+
 # curlがなぜかca-certificates.crtを読み込んでくれない問題のワークアラウンド
 export CURL_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
 
@@ -29,12 +31,16 @@ tmp="$(mktemp -d)"
 curl -h > /dev/null 2>&1 || error 'curl が見つかりません'
 jq -h > /dev/null 2>&1 || error 'jq が見つかりません'
 
-endpoint_info="/var/local/co2mon/DATA/endpoint_info"
-info_url="$(cat "${endpoint_info}" | grep '^infoUrl: ' | cut -d ' ' -f 2 | tr -d '\r')"
-type="$(cat "${endpoint_info}" | grep '^type: ' | cut -d ' ' -f 2 | tr -d '\r')"
-token="$(cat "${endpoint_info}" | grep '^token: ' | cut -d ' ' -f 2 | tr -d '\r')"
-if [ -z "${info_url}" ] || [ -z "${token}" ]; then
-  error 'endpoint_info が正しくありません'
+#endpoint_info="/var/local/co2mon/DATA/endpoint_info"
+#info_url="$(cat "${endpoint_info}" | grep '^infoUrl: ' | cut -d ' ' -f 2 | tr -d '\r')"
+#type="$(cat "${endpoint_info}" | grep '^type: ' | cut -d ' ' -f 2 | tr -d '\r')"
+#token="$(cat "${endpoint_info}" | grep '^token: ' | cut -d ' ' -f 2 | tr -d '\r')"
+#if [ -z "${info_url}" ] || [ -z "${token}" ]; then
+#  error 'endpoint_info が正しくありません'
+#fi
+webhook_url="$(cat "${CONF_DIR}"/webhook_url)"
+if [ -z "${webhook_url}" ]; then
+  error 'webhook_url が空です'
 fi
 
 co2="$(tail -n 1 /var/local/co2mon/DATA/log/co2/latest |
@@ -49,7 +55,7 @@ if [ -n "${latest_gps_tpv}" ]; then
   lat="$(echo "${latest_gps_tpv}" | jq -r .lat)"
   lng="$(echo "${latest_gps_tpv}" | jq -r .lon)"
   alt="$(echo "${latest_gps_tpv}" | jq -r .alt | grep -v 'null' | grep '.' || echo 0.0)"
-elif cat /var/local/co2mon/DATA/location | grep '.'; then
+elif cat /var/local/co2mon/DATA/location 2>/dev/null | grep '.'; then
   lat="$(cat /var/local/co2mon/DATA/location | cut -d ',' -f 1)"
   lng="$(cat /var/local/co2mon/DATA/location | cut -d ',' -f 2)"
   alt="$(cat /var/local/co2mon/DATA/location | cut -d ',' -f 3)"
@@ -59,10 +65,8 @@ else
   alt="0.0"
 fi
 
-printf '{"lat": %s, "lng": %s, "alt": %s}\n' "${lat}" "${lng}" "${alt}" |
-  jq --arg type "default" '. + {"type": $type}' |
-  jq --arg co2 "${co2}" '. + {"additional": {"info": {"co2": $co2}}}' |
-  curl -s -w '\n' -H "Content-type: application/json" -d @- "${info_url}?token=${token}"
+printf '{"content": %s}\n' "${co2}" |
+  curl -s -w '\n' -H "Content-type: application/json" -d @- "${webhook_url}"
 
 # ここで通常の終了処理
 on_exit
